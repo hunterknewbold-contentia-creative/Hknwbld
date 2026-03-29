@@ -1,0 +1,24 @@
+name: Extract Zip and Commit
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract zip file
+        run: unzip hunterknewboldcc-integrated.zip -d extracted/
+
+      - name: Commit extracted files
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add extracted/
+          git commit -m "Extract contents from hunterknewboldcc-integrated.zip" || echo "No changes to commit"
+          git push
