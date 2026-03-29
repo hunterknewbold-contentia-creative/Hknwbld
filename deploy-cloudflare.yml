@@ -1,0 +1,62 @@
+# This GitHub Actions workflow automatically extracts a packaged site
+# archive and deploys the contents to Cloudflare Pages.  It also
+# writes a GitHub deployment record so that your repository shows a
+# production deployment status.  Adjust the trigger, project name,
+# and secrets according to your environment.
+
+name: Deploy static site to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+  # Allows manual triggering of the workflow from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      # Check out repository contents
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Extract the packaged site.  The zip file should be committed
+      # to your repository.  This example assumes the file is named
+      # `hunterknewboldcc-integrated.zip` and is located at the root of the
+      # repository.  Adjust the filename if necessary.
+      - name: Unzip static site package
+        run: |
+          # install unzip if not present
+          sudo apt-get update -y
+          sudo apt-get install -y unzip
+          # create output directory
+          mkdir -p dist
+          # extract the zip file
+          unzip -o hunterknewboldcc-integrated.zip -d dist
+          # rename the extracted folder (spaces in names are tricky)
+          # this moves "hunterknewboldcc-contact-updated (1)" to a simpler name
+          mv "dist/hunterknewboldcc-contact-updated (1)" dist/site
+
+      # Deploy the extracted site to Cloudflare Pages.  Use secrets to
+      # configure your Cloudflare account.  See the Cloudflare Pages
+      # GitHub action documentation for details on required permissions
+      # and token scopes【999996887171311†L191-L223】.
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          # API token with Cloudflare Pages — Edit permission
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Your Cloudflare account ID
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # The name of your Pages project
+          projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+          # Directory to publish.  This should match the folder above.
+          directory: dist/site
+          # Use the built-in GitHub token to record a deployment status
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          # Deploy to main branch by default
+          branch: main
